@@ -1,0 +1,36 @@
+#!/system/bin/sh
+
+ #dat_name=$(echo $file | busybox sed 's!.*\/!!' | busybox awk -F"-|_|[+]|[.]|[{]|[(]" '{ print $1 }')
+ 
+
+ 
+  #r="$(busybox basename $file)"
+  #dat_name=${r%.*}
+
+  dat_name=$(echo $file | busybox sed 's!.*\/!!' | busybox awk -F".new.dat" '{ print $1 }')
+
+
+
+ if busybox test -s ./"$dat_name".transfer.list; then
+ echo
+ echo ".....Convert $file..."
+ echo
+ sdat2img "$dat_name".transfer.list "$dat_name".new.dat /"$ndd"/"$dat_name".img
+ if [ $(echo $?) -eq 0 ]; then
+ file=/"$ndd"/"$dat_name".img
+ nd="$ndd"
+ . /data/local/binary/unpack_img
+ else
+ echo
+ echo ".....Error converting $file"
+ echo
+ fi
+ else
+ echo
+ echo ".....There is no file "$dat_name".transfer.list in the folder."
+  fi
+
+
+
+
+          

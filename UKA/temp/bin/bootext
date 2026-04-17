@@ -1,0 +1,97 @@
+#!/system/bin/sh
+setenforce 0
+busybox mount -o rw,remount /
+busybox mount -o rw,remount /system
+dirboot="/data/local/UnpackerContexts"
+dirbin="/data/local/binary/bin_contexts"
+file="file_contexts"
+file_b="file_contexts.bin"
+workdir="./unpack_boot"
+cd ${dirboot}
+for f in $(find . -maxdepth 1 -name '*.img')
+do
+if [ ! -z "$(busybox hexdump -C -n 256 $f | grep 'BFBF')" ]; then
+echo
+echo .....An image with an Fb wrapper was found: $f
+echo
+echo .....Conversion...
+mkdir ./Fb_boot_orig 2> /dev/null
+cp $f ./Fb_boot_orig
+dd if=$f of=./boot.new.img bs=$(($(echo "0x$(busybox hexdump -C $f | busybox awk '/ANDROID!/ { print $1 }')"))) skip=1
+rm -f $f
+mv ./boot.new.img ./boot.img
+echo .....Received: boot.img without Fb-wrappers!
+echo
+else
+echo
+echo ..... $f - is not an Fb image.
+echo
+fi
+done
+
+if [ ! -f ./boot*.img ]; then
+echo
+echo .....Boot.img was not found in the working folder.
+echo
+else
+if [ -z "$(busybox hexdump -C -n 4 ./boot*.img | grep '24 4f 53 24')" ]; then
+echo .....Extract...
+echo
+mkdir ${workdir}
+${dirbin}/libboot unpackbootimg -i ./boot*.img -o ${workdir}
+${dirbin}/libboot minigzip -d ${workdir}/ramdisk.cpio.gz
+cd ${workdir}
+${dirbin}/libboot uncpio -c ramdisk.cpio -o ramdisk
+cd ./ramdisk
+if [ -f "${file_b}" -o -f "${file}" ]; then
+echo
+busybox cp -fv ./${file_b} ./${file} ${dirboot} 2> /dev/null | busybox awk -F"'" '{ print ".....Received file:"" "substr($2,3)"!" }'
+
+elif [ -f ./nonplat_${file} -a -f ./plat_${file} ]; then
+cat ./nonplat_${file} ./plat_${file} > ${dirboot}/${file}
+echo
+echo .....File received!
+else
+echo
+echo .....No file_contexts found in boot.img.
+fi
+else
+echo .....Found boot.img from intel.
+mkdir -p ./work/ramdisk-unpack 2> /dev/null
+cd ./work
+${dirbin}/unpack_intel ../boot*.img ./zlmage ./ramdisk.cpio.gz
+cd ./ramdisk-unpack
+busybox gunzip -c ../ramdisk.cpio.gz | busybox cpio -i 2> /dev/null
+echo
+busybox cp -fv ./${file_b} ./${file} ${dirboot} 2> /dev/null | busybox awk -F"'" '{ print ".....Received file:"" "substr($2,3)"!" }'
+echo
+rm -rf ../../work
+fi
+fi
+cd ${dirboot}
+rm -rf ${workdir}
+
+
+if [ -f ./${file_b} ]; then
+echo
+echo .....Conversion file_contexts.bin.
+echo
+if [ ! -z "$(busybox hexdump -C -n 4 ./${file_b} | grep '8a ff 7c f9')" ]; then
+sefparse ./${file_b} 2> /dev/null
+echo
+echo .....Received file_contexts!.....
+echo
+else
+echo .....file_contexts.bin is textual and no conversion is required.
+echo
+fi
+else
+echo
+echo .....There is no file that needs to be converted.
+echo
+fi
+
+
+
+
+         

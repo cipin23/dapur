@@ -1,0 +1,39 @@
+#!/system/bin/sh
+
+ myk(){
+ read b
+ if [ "$b" -le "7" ]; then
+ echo ".....Converting to "$file".br...Waiting..."
+ brotli -"$b"f ./"$file"
+ echo
+ else
+ echo
+ echo ".....Please enter a number between 0 and 7:"
+ myk
+ echo
+ fi
+ if [ $(echo $?) -eq 0 ] ; then
+ #echo
+ echo ".....Conversion completed!"
+ echo
+ else
+ #echo
+ echo ".....error: An error occurred while converting."
+ echo
+ fi
+}
+
+ if [ -f ./"$file" ]; then
+ echo
+ echo ".....Enter the compression ratio(number from 0 to 7):"
+ myk
+ else
+ echo
+ echo ".....There is no "$file" in the folder."
+ echo
+ fi
+
+
+
+
+     

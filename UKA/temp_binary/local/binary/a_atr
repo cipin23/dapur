@@ -1,0 +1,460 @@
+#!/system/bin/sh
+
+cd /data/local/UnpackerSystem
+
+my_d()
+{
+echo
+echo ".....Enter the path to the folder with the added files, for example: system/app"
+read cc && xxx=$(echo "$cc" | busybox sed 's!/data/local/UnpackerSystem!!; s!^/!!')
+if [ $(echo $?) -eq 0 ]; then
+vv=$(echo $xxx | busybox awk -F"/" '{ print $1}')
+
+ check_sar()
+{
+ if [ -f "$vv/system/build.prop" ]; then
+ sar=true
+ return 0
+ else
+ sar=false
+ return 1
+ fi
+}
+ check_sar
+ 
+
+ if [ -d "$xxx" ]; then
+ xx=$(echo $xxx | busybox awk -F"/" '{ print $1 }')
+ 
+ config="config/$xx"
+
+echo
+else
+echo
+echo ".....error: There is no folder in $PWD: $xxx!"
+echo
+echo ".....Enter an existing folder!"
+echo
+my_d
+return
+fi
+fi
+return
+}
+
+
+ replace_perm()
+{
+cat "$config"/"$xx"_ffff.txt | while read a b c d; do
+ busybox grep "$a " "$config"/"$xx"_ffff.txt | while read real_con; do
+ if [ ! -z "$real_con" ]; then
+ busybox sed -i "s!$real_con!$a $b $c $d!" "$config"/"$xx"_ffff.txt
+else
+ echo "$a" "$b" "$c" "$d" >> "$config"/"$xx"_ffff.txt
+ fi
+ done
+ done
+ return
+}
+
+ttt()
+{
+echo
+if busybox test -s "$config"/"$xx"_ffff.txt; then
+select img in "Continue" "Do not delete the temporary file and exit to the main menu" "Delete the temporary file and exit to the main menu"; do
+case $REPLY in 
+         1 ) clear
+               s_atr
+               break ;;
+         2 ) clear
+               main_menu
+               break ;;
+         3 ) clear
+             rm -f "$config"/"$xx"_ffff.txt
+               main_menu
+               break ;;
+         * ) clear
+             echo
+             echo "      Enter the numbers corresponding to this menu."
+             echo
+             ttt
+              break ;;
+    esac
+done
+else
+select img in "Continue" "Exit to the main menu"; do
+case $REPLY in 
+         1 ) clear
+               s_atr
+               break ;;
+         2 ) clear
+               main_menu
+               break ;;
+         * ) clear
+             echo
+             echo "      Enter the numbers corresponding to this menu."
+             echo
+             ttt
+              break ;;
+    esac
+done
+return
+fi
+return
+}
+
+ff_dirs()
+{
+ clear
+ echo
+ echo "...Attributes for folders in \"$xxx\" when unpacking:"
+echo
+h="$xxx"
+ if [ "$h" == "$vv" -a "$sar" = "true" ]; then
+ cat "$config"/"$xx"_gg_d.txt | busybox grep -v "$vv/system" | busybox grep "$h"
+ elif [ "$h" != "$vv" -a "$sar" = "true" ]; then
+ cat "$config"/"$xx"_gg_d.txt | busybox grep "$h" | busybox awk -F"/" '!($1 $2 $3 in a) {a[$1 $2 $3];print}'
+ else
+ cat "$config"/"$xx"_gg_d.txt | busybox grep "$h" | busybox awk -F"/" '!($1 $2 in a) {a[$1 $2];print}'
+ fi
+echo
+echo "..Enter the attributes for the folders added to \""$xxx"\", which should be written to fs_config, separated by a space (owner permission group, for example: 0 0 755):"
+echo
+read ab && aa=$(python39 /data/local/binary/atrib.py "$ab")
+if [ ! -z "$(echo "$aa" | busybox grep -E '([0-9]{1,4} [0-9]{1,4} [0-9]{1,4})$')" ]; then
+clear
+echo
+echo "...Save attributes to a temporary file for
+    folders added to \"$xxx\": $aa?"
+echo
+select img in "Yes" "No, enter other values" "Return to entering folders" "Exit to the main menu"; do
+case $REPLY in 
+         1 ) clear
+ if [ "$sar" == "true" -a "$xxx" == "$vv" ]; then
+ cat "$config"/"$xx"_d_fff.txt | busybox grep -v "$vv/system" | busybox grep '_d$' | busybox sed "s/_d$/ $aa/" >> "$config"/"$xx"_ffff.txt
+
+   replace_perm
+ else
+
+ cat "$config"/"$xx"_d_fff.txt | busybox grep '_d$' | busybox sed "s/_d$/ $aa/" >> "$config"/"$xx"_ffff.txt
+
+   replace_perm
+ fi
+ 
+ if [ ! -z "$(cat "$config"/"$xx"_f_fff.txt | busybox grep -E '_f$|_l$')" ]; then
+               clear
+               attr
+               ff_files
+               clear && clear
+               return
+               else
+               read_fs
+               return
+               fi
+               return
+               break ;;
+         2 ) clear
+               ff_dirs
+               break ;;
+         3 ) clear
+               s_atr
+               break ;;
+         4 ) clear
+               rm -f "$config"/"$xx"_ffff.txt
+               main_menu
+               break ;;
+         * ) clear
+             echo
+             echo "      Enter the numbers corresponding to this menu."
+              ff_dirs
+              break ;;
+    esac
+done
+else
+echo
+echo "..Error, invalid input format! Please enter only numbers, for example: 0 0 755"
+echo
+ff_dirs
+return
+fi
+return
+}
+
+attr()
+{
+ clear
+ echo
+ echo "...Attributes for files in \"$xxx\" when unpacking:"
+ echo
+k="$xxx"
+if [ "$k" == "$vv" -a "$sar" = "true" ]; then
+
+ cat "$config"/"$xx"_gg_f.txt | busybox grep -v "$k/system"
+
+ elif [ "$k" != "$vv" -a "$sar" = "true" ]; then
+ cat "$config"/"$xx"_gg_f.txt | busybox grep "$k" | busybox awk -F"/" '!($1 $2 $3 in a) {a[$1 $2 $3];print}'
+ else
+ cat "$config"/"$xx"_gg_f.txt | busybox grep "$k" | busybox awk -F"/" '!($1 $2 in a) {a[$1 $2];print}'
+ #return
+fi
+ return
+}
+
+ff_files()
+{
+echo
+echo "..Enter the attributes for files added to \""$xxx"\" to be written to fs_config, separated by a space (owner permission group, for example: 0 0 644):"
+echo
+read ac && bb=$(python39 /data/local/binary/atrib.py "$ac")
+if [ ! -z "$(echo "$bb" | busybox grep -E '([0-9]{1,4} [0-9]{1,4} [0-9]{1,4})$')" ]; then
+clear
+echo
+echo "...Save attributes to a temporary file for
+    files added to \"$xxx\": $bb?"
+echo
+select img in "Yes" "No, enter other values" "Return to entering folders" "Delete temporary file and exit to the main menu"; do
+case $REPLY in 
+         1 ) clear
+ 
+ if [ "$vv" == "$xxx" -a "$sar" = "true" ]; then
+ cat "$config"/"$xx"_f_fff.txt | busybox grep -v "$vv/system" | busybox grep -E '_f$|_l$' | busybox sed "s/_f$/ $bb/; s/_l$/ $bb/" >> "$config"/"$xx"_ffff.txt
+
+   replace_perm
+ else
+ cat "$config"/"$xx"_f_fff.txt | busybox grep -E '_f$|_l$' | busybox sed "s/_f$/ $bb/; s/_l$/ $bb/" >> "$config"/"$xx"_ffff.txt
+
+   replace_perm
+ fi
+   
+               read_fs
+               clear
+                return
+               break ;;
+         2 ) clear
+               ff_files
+               return
+               break ;;
+         3 ) clear
+               s_atr
+               return
+               break ;;
+         4 ) clear
+               rm -f "$config"/"$xx"_ffff.txt
+               main_menu
+               return
+               break ;;
+         * ) clear
+             echo
+             echo "      Enter the numbers corresponding to this menu."
+              ff_files
+               return
+              break ;;
+    esac
+done
+else
+echo
+echo "..Error, invalid input format! Please enter only numbers, for example: 0 0 644"
+echo
+ff_files
+return
+fi
+return
+}
+
+read_fs()
+{
+clear
+busybox sort -u "$config"/"$xx"_ffff.txt > "$config"/"$xx"_ffff.tmp && rm -f "$config"/"$xx"_ffff.txt
+busybox grep -E '( [0-9]{1,4} [0-9]{1,4} [0-9]{1,4})$' "$config"/"$xx"_ffff.tmp > "$config"/"$xx"_ffff.txt && rm -f "$config"/"$xx"_ffff.tmp
+clear
+echo
+echo
+echo "...Received such strings for writing, check the correctness:"
+echo
+cat "$config"/"$xx"_ffff.txt
+
+my_read()
+{
+echo
+echo ".....Write to "$xx"_fs_config?"
+echo
+select img in "Record and continue" "Record, delete temporary file and exit to main menu" "Do not record and continue" "Do not record, delete temporary file and exit to main menu"; do
+case $REPLY in 
+         1 ) clear
+
+  cat "$config"/"$xx"_ffff.txt >> "$config"/"$xx"_fs_config
+ 
+ cat "$config"/"$xx"_ffff.txt | while read a b c d; do
+ busybox grep "$a " "$config"/"$xx"_fs_config | while read real_fs; do
+ if [ ! -z "$real_fs" ]; then
+ busybox sed -i "s!$real_fs!$a $b $c $d!" "$config"/"$xx"_fs_config
+ fi
+ done
+ done
+
+  busybox awk '!($0 in a) {a[$0];print}' "$config"/"$xx"_fs_config > "$config"/"$xx"_conf.tmp && busybox mv -f "$config"/"$xx"_conf.tmp "$config"/"$xx"_fs_config
+   
+   busybox sed -i '/^$/d' "$config"/"$xx"_fs_config
+               echo
+               echo ".....Written in "$config"/"$xx"_fs_config."
+               echo
+               ttt
+               break ;;
+         2 ) clear
+             
+ cat "$config"/"$xx"_ffff.txt >> "$config"/"$xx"_fs_config
+ 
+ cat "$config"/"$xx"_ffff.txt | while read a b c d; do
+ busybox grep "$a " "$config"/"$xx"_fs_config | while read real_fs; do
+ if [ ! -z "$real_fs" ]; then
+ busybox sed -i "s!$real_fs!$a $b $c $d!" "$config"/"$xx"_fs_config
+ fi
+ done
+ done
+
+ busybox awk '!($0 in a) {a[$0];print}' "$config"/"$xx"_fs_config > "$config"/"$xx"_conf.tmp && busybox mv -f "$config"/"$xx"_conf.tmp "$config"/"$xx"_fs_config
+
+      busybox sed -i '/^$/d' "$config"/"$xx"_fs_config
+      rm -f "$config"/"$xx"_ffff.txt
+               echo
+               echo ".....Written in "$config"/"$xx"_fs_config."
+               echo
+               main_menu
+               break ;;
+         3 ) clear
+               ttt
+               break ;;
+         4 ) clear
+             rm -f "$config"/"$xx"_ffff.txt
+             main_menu
+             break ;;
+         *) clear
+            echo
+            echo "      Enter the numbers corresponding to this menu."
+              my_read
+              break ;;
+    esac
+done
+return
+}
+my_read
+}
+
+
+s_atr()
+{
+my_d
+ t=`echo $xxx | busybox sed 's!^/!!'`
+
+ find "$t" -type d | busybox sed 's!$!_d!' > "$config"/"$xx"_ff.txt
+ find "$t" -type f | busybox sed 's!$!_f!' >> "$config"/"$xx"_ff.txt
+ find "$t" -type l | busybox sed 's!$!_l!' >> "$config"/"$xx"_ff.txt
+
+if busybox test -s "$config"/"$xx"_ff.txt -a -s "$config"/"$xx"_f.txt; then
+    clear
+ busybox diff -s "$config"/"$xx"_f.txt "$config"/"$xx"_ff.txt | busybox grep -E "\+$t" | busybox sed 's!+!!' | busybox grep '_d$' > "$config"/"$xx"_d_fff.txt
+ busybox diff -s "$config"/"$xx"_f.txt "$config"/"$xx"_ff.txt | busybox grep -E "\+$t" | busybox sed 's!+!!' | busybox grep -E '_f$|_l$' > "$config"/"$xx"_f_fff.txt
+
+if busybox test -s "$config"/"$xx"_d_fff.txt -o -s "$config"/"$xx"_f_fff.txt; then
+clear
+echo  
+echo ".....Added to $xxx:"
+echo "                -------             "
+ if [ "$sar" == "true" -a "$xxx" == "$vv" ]; then
+ cat "$config"/"$xx"_d_fff.txt | grep -v "$vv/system"
+ cat "$config"/"$xx"_f_fff.txt | grep -v "$vv/system"
+ else
+  cat "$config"/"$xx"_d_fff.txt
+  cat "$config"/"$xx"_f_fff.txt
+ fi
+
+my_enter()
+{
+echo
+select img in "Entering attributes" "Return to entering folders" "Exit to the main menu"; do
+case $REPLY in 
+         1 ) clear
+
+
+ if [ "$sar" == "true" -a "$xxx" == "$vv" ]; then
+ if [ ! -z "$(cat "$config"/"$xx"_d_fff.txt | busybox grep -v "$vv/system" | busybox grep '_d$')" ]; then
+ ff_dirs
+ return
+ else
+ attr
+ ff_files
+ return
+ fi
+ else
+ if [ ! -z "$(cat "$config"/"$xx"_d_fff.txt | busybox grep '_d$')" ]; then
+ ff_dirs
+ return
+ else
+ attr
+ ff_files
+ return
+ fi
+ return
+ fi
+ return
+
+
+ 
+               break ;;            
+         2 ) clear
+               s_atr
+               return
+               break ;;
+         3 ) clear
+               main_menu
+               return
+               break ;;
+         * ) clear
+             echo
+             echo "      Enter the numbers corresponding to this menu."
+              echo
+              my_enter
+              break ;;
+    esac
+done
+echo
+return
+}
+my_enter
+else
+echo
+echo ".....No additions to \"$xxx\" found."
+  ttt
+return
+fi
+else
+echo
+echo ".....An error has occurred!"
+echo
+main_menu
+return
+fi
+return
+}
+
+
+check_d()
+{
+ #cd /data/local/UnpackerSystem
+ for a in $(busybox find -maxdepth 1 ! -name "." -type d | sed 's!./!!'); do
+ if [ -f "config/"$a"/"$a"_file_contexts" ]; then
+ return 0
+ fi
+ done
+ return
+}
+ 
+
+ if [ check_d -eq "0" ]; then
+ s_atr
+ else
+ echo
+ echo ".....No folders to build!"
+ echo
+ fi
+ 

@@ -1,0 +1,201 @@
+#!/system/bin/sh
+
+clear
+ pack_d="$pack_d"
+ . /data/local/binary/pack_img
+
+my_br()
+{
+myk(){
+read n
+if busybox test "$(busybox expr "$n" \* 1 2> /dev/null)"; then
+ n="$n"
+ else
+ echo
+ echo ".....Compression ratio not entered"
+ echo ".....Default: 0"
+ echo
+ n="0"
+ fi
+if busybox test "$n" -le "7"; then
+echo
+echo ".....Conversion to "$pack_d".new.dat.br"
+echo ".....Compression ratio: $n"
+echo ".....We wait..."
+brotli -"$n"f "$outdir"/"$pack_d".new.dat
+echo
+else
+echo
+echo ".....Enter a number from 0 to 7:"
+myk
+echo
+fi
+if [ $(echo $?) -eq 0 ] ; then
+echo ".....Removal "$pack_d".new.dat"
+rm -f "$outdir"/"$pack_d".new.dat
+echo
+echo ".....Conversion completed!"
+echo
+#echo ".....Size raw == $size_out bytes"
+#echo ".....Free space: $size_free mb"
+echo -e "\033[33;1m.....Size raw == $size_out byte\033[0m"
+ echo -e "\033[33;1m.....Free space: $size_free mb\033[0m"
+echo
+else
+echo
+echo ".....error: An error occurred while converting."
+echo
+fi
+}
+
+if busybox test -s "$outdir"/"$pack_d".new.dat; then
+echo
+echo ".....To convert to "$pack_d".new.dat.br, enter the compression ratio(number from 0 to 7):"
+myk
+else
+echo
+echo ".....There is no "$pack_d".new.dat in the folder"
+echo
+fi
+}
+
+
+ 
+
+#----------------------------finish pack
+
+if busybox test -s "$outdir"/"$pack_d".new.img;then
+
+ mv_br()
+{
+ busybox test -s "$outdir"/"$pack_d".new.new.dat && busybox mv -f "$outdir"/"$pack_d".new.new.dat "$outdir"/"$pack_d".new.dat
+ busybox test -f "$outdir"/"$pack_d".new.patch.dat && busybox mv -f "$outdir"/"$pack_d".new.patch.dat "$outdir"/"$pack_d".patch.dat
+ busybox test -s "$outdir"/"$pack_d".new.transfer.list && busybox mv -f "$outdir"/"$pack_d".new.transfer.list "$outdir"/"$pack_d".transfer.list
+}
+
+b="python39 /data/local/binary/bin_system/img2sdat-master/img2sdat5.py "$outdir"/"$pack_d".new.img $outdir"
+if [ -d ./"$pack_d" ]; then
+a=$(busybox awk -F"=" '/ro.build.version.release=/ { print $2 }' "$pack_d"/build.prop 2> /dev/null) || a=$(busybox awk -F"=" '/ro.build.version.release=/ { print $2 }' "$pack_d"/"$pack_d"/build.prop 2> /dev/null)
+
+
+g=$(busybox grep 'ro.build.version.sdk=.*.' /data/local/UnpackerSystem/"$pack_d"/build.prop | busybox grep -Eo '.{2}$') 2> /dev/null || g=$(busybox grep 'ro.build.version.sdk=.*.' "$pack_d"/"$pack_d"/build.prop | busybox grep -Eo '.{2}$') 2> /dev/null
+if [ "$g" -ge "24" ]; then
+echo
+echo "......API version detected = $g Android version: $a"
+echo
+echo "......Conversion to .dat..."
+echo
+$b 4
+if [ $(echo $?) -eq 0 ]; then
+ mv_br
+echo
+echo ".....Completed successfully!"
+echo
+echo ".....Removal "$pack_d".new.img..."
+rm -f "$outdir"/"$pack_d".new.img
+echo
+my_br
+else
+echo
+echo ".....error: An error occurred while converting."
+echo
+fi
+
+elif [ "$g" -eq "21" ]; then
+echo
+echo "......API version detected = $g Android version: $a"
+echo
+echo "......Conversion to .dat..."
+echo
+$b 1
+if [ $(echo $?) -eq 0 ]; then
+ mv_br
+echo
+echo ".....Completed successfully!"
+echo
+echo ".....Removal "$pack_d".new.img..."
+rm -f "$outdir"/"$pack_d".new.img
+echo
+my_br
+else
+echo
+echo ".....error: An error occurred while converting."
+echo
+fi
+
+elif [ "$g" -eq "22" ]; then
+echo
+echo "......API version detected = $g Android version: $a"
+echo
+echo "......Conversion to .dat..."
+echo
+$b 2
+if [ $(echo $?) -eq 0 ]; then
+ mv_br
+echo
+echo ".....Completed successfully!"
+echo
+echo ".....Removal "$pack_d".new.img..."
+rm -f "$outdir"/"$pack_d".new.img
+echo
+my_br
+else
+echo
+echo ".....error: An error occurred while converting."
+echo
+fi
+
+elif [ "$g" -eq "23" ]; then
+echo
+echo "......API version detected = $g Android version: $a"
+echo
+echo "......Conversion to .dat..."
+echo
+$b 3
+if [ $(echo $?) -eq 0 ]; then
+ mv_br
+echo
+echo ".....Completed successfully!"
+echo
+echo ".....Removal "$pack_d".new.img..."
+rm -f "$outdir"/"$pack_d".new.img
+echo
+my_br
+else
+echo
+echo ".....error: An error occurred while converting."
+echo
+fi
+
+else
+echo ".....No SDK version found."
+echo
+echo ".....Enter the number corresponding to the android version of the image you are building:"
+echo
+$b
+if [ $(echo $?) -eq 0 ]; then
+ mv_br
+echo
+echo ".....Completed successfully!"
+echo
+echo ".....Removal "$pack_d".new.img..."
+rm -f "$outdir"/"$pack_d".new.img
+echo
+my_br
+else
+echo
+echo ".....error: Error while converting!"
+echo
+fi
+fi
+fi
+else
+echo ".....No image \""$pack_d".new.img\" to convert."
+fi
+ rm -f /data/local/python39/tmp* tmp*
+
+
+
+
+
+      
